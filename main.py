@@ -57,7 +57,7 @@ class FSRead(Tool):
         self.boss.commit_all_editors_to_container()
         try:
             self.work()
-        except Exception:
+        except Exception as e:
             # Something bad happened report the error to the user
             import traceback
             error_dialog(
@@ -94,6 +94,7 @@ class FSRead(Tool):
                 if tag and tag not in self.disallowed_tags and text and len(text) > 0:
                     if tag != 'b':
                         text = self.fsread(text, 0.5)
+                    # print(f'<{tag}>{text}</{tag}>')
                     new_element = etree.fromstring(f'<{tag}>{text}</{tag}>')
                     tail = get_tail(element)
                     if len(tail) > 0:
@@ -108,15 +109,15 @@ class FSRead(Tool):
             container.replace(page, parsed)
 
     def fsread(self, text, intensity):
-        return re.sub(r'[\w]+', lambda t: self.style_word(t, intensity), text)
-        # return ' '.join(self.style_word(w, intensity) for w in text.split())
+        ans = text
+        ans = re.sub(r'[\w`’]+', lambda t: self.style_word(t, intensity), ans)
+        return replace_amp(ans)
 
     def style_word(self, word, intensity):
         # intensity should be between 0 and 1
         word = word.group(0)
         mid_point = math.ceil(len(word) * intensity)
-        ans = f'<b>{prepare_string_for_xml(word[:mid_point])}</b>{prepare_string_for_xml(word[mid_point:])}'
-        return ans
+        return f'<b>{prepare_string_for_xml(word[:mid_point])}</b>{prepare_string_for_xml(word[mid_point:])}'
 
 
 def replace_with(item, replacement):
@@ -140,3 +141,6 @@ def get_tail(element, ignore_whitespace=False):
         tail = tail.strip()
     return tail
 
+
+def replace_amp(raw):
+    return raw.replace('&', '&amp;')
